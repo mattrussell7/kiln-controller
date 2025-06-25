@@ -558,16 +558,22 @@ class Profile():
         if time > self.get_duration():
             return (None, None)
 
-        prev_point = None
-        next_point = None
+        # handle the case where the requested time is before the first
+        # profile entry. this can happen if profiles do not start at
+        # 0 seconds.
+        if time <= self.data[0][0]:
+            return (self.data[0], self.data[0])
 
-        for i in range(len(self.data)):
-            if time < self.data[i][0]:
-                prev_point = self.data[i-1]
-                next_point = self.data[i]
-                break
+        prev_point = self.data[0]
+        for i in range(1, len(self.data)):
+            if time <= self.data[i][0]:
+                return (prev_point, self.data[i])
+            prev_point = self.data[i]
 
-        return (prev_point, next_point)
+        # if we get here the time matches the last data point exactly or
+        # is slightly beyond it; return the last point twice so that
+        # interpolation results in the final temperature
+        return (self.data[-1], self.data[-1])
 
     def get_target_temperature(self, time):
         if time > self.get_duration():
