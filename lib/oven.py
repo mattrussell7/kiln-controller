@@ -555,25 +555,37 @@ class Profile():
         return max([t for (t, x) in self.data])
 
     def get_surrounding_points(self, time):
-        if time > self.get_duration():
+        duration = self.get_duration()
+        if time <= self.data[0][0]:
+            # before or exactly at the first point
+            return (self.data[0], self.data[0])
+        if time >= duration:
+            if time == duration:
+                # exactly at the last point
+                return (self.data[-1], self.data[-1])
             return (None, None)
 
-        prev_point = None
-        next_point = None
+        prev_point = self.data[0]
+        for next_point in self.data[1:]:
+            if time < next_point[0]:
+                return (prev_point, next_point)
+            elif time == next_point[0]:
+                return (next_point, next_point)
+            prev_point = next_point
 
-        for i in range(len(self.data)):
-            if time < self.data[i][0]:
-                prev_point = self.data[i-1]
-                next_point = self.data[i]
-                break
-
-        return (prev_point, next_point)
+        return (self.data[-1], self.data[-1])
 
     def get_target_temperature(self, time):
         if time > self.get_duration():
             return 0
 
         (prev_point, next_point) = self.get_surrounding_points(time)
+
+        if prev_point is None or next_point is None:
+            return 0
+
+        if next_point[0] == prev_point[0]:
+            return prev_point[1]
 
         incl = float(next_point[1] - prev_point[1]) / float(next_point[0] - prev_point[0])
         temp = prev_point[1] + (time - prev_point[0]) * incl
